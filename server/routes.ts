@@ -27,22 +27,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/users/:id/role', requireAuth, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const { role, isApproved } = req.body;
+      const { isApproved } = req.body;
       
-      // Check if user has permission to approve/update roles
       const currentUser = req.user;
-      if (currentUser.role !== 'admin') {
-        return res.status(403).json({ message: "Only admins can approve accounts" });
-      }
-      
-      // Get the user to update
       const userToUpdate = await storage.getUser(parseInt(id));
+      
       if (!userToUpdate) {
         return res.status(404).json({ message: "User not found" });
       }
       
-      const user = await storage.updateUserRole(parseInt(id), userToUpdate.role, isApproved);
-      res.json(user);
+      // Check permissions based on user type
+      if (userToUpdate.role === 'gymnast') {
+        // Gymnast approvals go to the club they nominated
+        if (currentUser.role !== 'club' || currentUser.clubName !== userToUpdate.clubAffiliation) {
+          return res.status(403).json({ message: "Only the nominated club can approve gymnast accounts" });
+        }
+      } else {
+        // All other roles need admin approval
+        if (currentUser.role !== 'admin') {
+          return res.status(403).json({ message: "Only admins can approve these accounts" });
+        }
+      }
+      
+      if (isApproved) {
+        const user = await storage.updateUserRole(parseInt(id), userToUpdate.role, true);
+        res.json(user);
+      } else {
+        // Reject by deleting the user
+        await storage.deleteUser(parseInt(id));
+        res.json({ message: "User account rejected and removed" });
+      }
     } catch (error) {
       console.error("Error updating user role:", error);
       res.status(500).json({ message: "Failed to update user role" });

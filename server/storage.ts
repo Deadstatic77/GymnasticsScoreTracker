@@ -29,6 +29,7 @@ export interface IStorage {
   createUser(user: UpsertUser): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserRole(id: number, role: string, isApproved?: boolean): Promise<User>;
+  deleteUser(id: number): Promise<void>;
   getUsersByRole(role: string): Promise<User[]>;
   
   // Event operations
@@ -126,9 +127,37 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users).where(eq(users.role, role as any));
   }
 
+  async deleteUser(id: number): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
+  }
+
   // Event operations
   async getEvents(): Promise<Event[]> {
-    return await db.select().from(events).orderBy(desc(events.startDate));
+    const allEvents = await db.select().from(events).orderBy(desc(events.startDate));
+    
+    // Update event statuses based on dates
+    const today = new Date().toISOString().split('T')[0];
+    
+    for (const event of allEvents) {
+      let newStatus = 'upcoming';
+      
+      if (event.endDate < today) {
+        newStatus = 'completed';
+      } else if (event.startDate <= today && event.endDate >= today) {
+        newStatus = 'live';
+      }
+      
+      // Update if status has changed
+      if (event.status !== newStatus) {
+        await db
+          .update(events)
+          .set({ status: newStatus as any })
+          .where(eq(events.id, event.id));
+        event.status = newStatus as any;
+      }
+    }
+    
+    return allEvents;
   }
 
   async getEvent(id: number): Promise<Event | undefined> {

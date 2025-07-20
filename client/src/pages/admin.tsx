@@ -9,12 +9,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { User } from "@shared/schema";
-import { UserCheck, UserX, Users, Settings, Trophy, Calendar } from "lucide-react";
+import { UserCheck, UserX, Users, Settings, Trophy, Calendar, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 export default function Admin() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("pending");
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Check if user is admin
   if (!user || user.role !== 'admin') {
@@ -59,9 +61,11 @@ export default function Admin() {
   const approveUserMutation = useMutation({
     mutationFn: async ({ userId, approved }: { userId: number; approved: boolean }) => {
       const response = await apiRequest("PATCH", `/api/users/${userId}/role`, {
-        role: user?.role,
         isApproved: approved,
       });
+      if (!approved) {
+        return { deleted: true };
+      }
       return await response.json();
     },
     onSuccess: (_, variables) => {
@@ -69,7 +73,7 @@ export default function Admin() {
         title: variables.approved ? "User Approved" : "User Rejected",
         description: variables.approved 
           ? "The user account has been approved and activated."
-          : "The user account has been rejected.",
+          : "The user account has been rejected and removed.",
       });
       // Refetch all user lists
       refetchJudges();
@@ -94,9 +98,20 @@ export default function Admin() {
     approveUserMutation.mutate({ userId, approved: false });
   };
 
+  // Filter function for search
+  const filterUsers = (users: User[]) => {
+    if (!searchTerm.trim()) return users;
+    return users.filter(user => 
+      `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
+
   const UserApprovalTable = ({ users, title, type }: { users: User[]; title: string; type: string }) => {
-    const pendingUsers = users.filter(u => !u.isApproved);
-    const approvedUsers = users.filter(u => u.isApproved);
+    const filteredUsers = filterUsers(users);
+    const pendingUsers = filteredUsers.filter(u => !u.isApproved);
+    const approvedUsers = filteredUsers.filter(u => u.isApproved);
     const showPending = activeTab === "pending";
     const displayUsers = showPending ? pendingUsers : approvedUsers;
 
@@ -259,6 +274,19 @@ export default function Admin() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Search Bar */}
+        <div className="flex gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search users by name, username, or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
         </div>
 
         {/* User Management Tabs */}

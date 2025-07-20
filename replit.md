@@ -10,13 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **Independent Authentication Implemented** (2025-01-20): Successfully removed Replit authentication dependency and implemented traditional username/password system
-- **Admin Account Created**: Admin login credentials - username: "admin", password: "admin123" 
-- **Comprehensive Admin Panel**: Built full user approval system for judges, clubs, and gymnasts
-- **Event Management System**: Both admin and club users can create, rename, and edit events with sessions
-- **Gymnast Matching Functionality**: When clubs enter competitor names, system checks for existing gymnast accounts and links them
-- **Role-Based Access Control**: Complete system with Observer (auto-approved), Judge/Club/Gymnast (manual approval)
-- **Gymnast Statistics Dashboard**: Comprehensive stats page with performance charts and competition history
+- **Critical Bug Fixes Implemented** (2025-01-20): Fixed 10 major issues including approval workflows, apparatus corrections, and score formatting
+- **Apparatus Corrected**: Limited to only 4 women's gymnastics events: Floor, Vault, Bars, and Beam
+- **Enhanced Registration Validation**: Added required field validation for gymnast club affiliation and role-specific fields
+- **Improved Approval Workflows**: Gymnast accounts now properly route to clubs for approval, admin accounts handle judges/clubs
+- **Account Rejection System**: Added ability to reject and remove pending accounts with proper feedback
+- **Enhanced Admin Panel**: Added search functionality to find users by name, username, or email
+- **Score Display Standardized**: All scores now display in "X.X" format throughout the application
+- **Date Logic Fixed**: Events automatically update status based on start/end dates (upcoming, live, completed)
+- **Independent Authentication**: Traditional username/password system with admin account (username: "admin", password: "admin123")
 
 ## System Architecture
 

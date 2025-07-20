@@ -114,6 +114,9 @@ export function setupAuth(app: Express) {
       // Hash password
       const hashedPassword = await hashPassword(password);
 
+      // Only observers are auto-approved, all other roles need approval
+      const isApproved = role === 'observer';
+
       // Create user
       const user = await storage.createUser({
         username,
@@ -122,23 +125,31 @@ export function setupAuth(app: Express) {
         firstName,
         lastName,
         role,
-        isApproved: role === 'observer', // Observers are auto-approved
+        isApproved,
         ...profileData,
       });
 
-      // Log the user in
-      req.login(user, (err) => {
-        if (err) return next(err);
-        res.status(201).json({
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          role: user.role,
-          isApproved: user.isApproved,
+      // Only log in if approved (observers only)
+      if (isApproved) {
+        req.login(user, (err) => {
+          if (err) return next(err);
+          res.status(201).json({
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: user.role,
+            isApproved: user.isApproved,
+          });
         });
-      });
+      } else {
+        res.status(201).json({ 
+          message: "Account created successfully. Awaiting approval.",
+          needsApproval: true,
+          role: user.role
+        });
+      }
     } catch (error) {
       console.error("Registration error:", error);
       res.status(500).json({ message: "Registration failed" });

@@ -283,11 +283,11 @@ export default function GymnastStats() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Average:</span>
-                        <span className="font-medium">{apparatus.average.toFixed(2)}</span>
+                        <span className="font-medium">{apparatus.average.toFixed(1)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Best:</span>
-                        <span className="font-medium text-green-600">{apparatus.best.toFixed(2)}</span>
+                        <span className="font-medium text-green-600">{apparatus.best.toFixed(1)}</span>
                       </div>
                     </div>
                   </CardContent>

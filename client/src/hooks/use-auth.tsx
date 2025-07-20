@@ -73,14 +73,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/register", userData);
       return await res.json();
     },
-    onSuccess: (user: User) => {
-      queryClient.setQueryData(["/api/user"], user);
-      toast({
-        title: "Registration successful",
-        description: user.role === 'observer' 
-          ? "Your account is ready to use!" 
-          : "Your account has been created and is pending approval.",
-      });
+    onSuccess: (response: any) => {
+      if (response.needsApproval) {
+        toast({
+          title: "Account Created",
+          description: `Your ${response.role} account has been created and is awaiting approval.`,
+        });
+      } else {
+        queryClient.setQueryData(["/api/user"], response);
+        toast({
+          title: "Registration successful",
+          description: "Your account is ready to use!",
+        });
+      }
     },
     onError: (error: Error) => {
       toast({

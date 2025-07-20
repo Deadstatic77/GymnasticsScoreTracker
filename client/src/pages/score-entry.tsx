@@ -118,7 +118,7 @@ export default function ScoreEntry() {
     const deductions = parseFloat(form.watch("deductions") || "0");
     
     const calculated = difficultyScore + executionScore - deductions;
-    setFinalScore(Math.max(0, calculated).toFixed(3));
+    setFinalScore(Math.max(0, calculated).toFixed(1));
   }, [form.watch("difficultyScore"), form.watch("executionScore"), form.watch("deductions")]);
 
   const onSubmit = (data: z.infer<typeof scoreSchema>) => {
@@ -287,7 +287,7 @@ export default function ScoreEntry() {
                         <div className="text-right">
                           {score ? (
                             <>
-                              <div className="text-lg font-bold text-secondary">{score.finalScore}</div>
+                              <div className="text-lg font-bold text-secondary">{parseFloat(score.finalScore).toFixed(1)}</div>
                               <div className="text-xs text-gray-500">Scored</div>
                             </>
                           ) : selectedGymnast?.id === gymnast.id ? (

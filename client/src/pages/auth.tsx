@@ -36,6 +36,20 @@ const registerSchema = z.object({
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords must match",
   path: ["confirmPassword"],
+}).refine((data) => {
+  if (data.role === "gymnast" && !data.clubAffiliation) {
+    return false;
+  }
+  if (data.role === "judge" && (!data.judgeId || !data.displayName)) {
+    return false;
+  }
+  if (data.role === "club" && (!data.clubName || !data.clubUsername || !data.location)) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Please fill in all required fields for your account type",
+  path: ["clubAffiliation"], // Will show error on relevant field
 });
 
 export default function Auth() {
@@ -333,6 +347,33 @@ export default function Auth() {
                             <Info className="h-4 w-4" />
                             <AlertDescription className="text-sm">
                               Judge accounts require approval before activation.
+                            </AlertDescription>
+                          </Alert>
+                        </div>
+                      )}
+
+                      {watchedRole === "gymnast" && (
+                        <div className="space-y-3">
+                          <div>
+                            <Label htmlFor="clubAffiliation">Club Affiliation *</Label>
+                            <Select onValueChange={(value) => registerForm.setValue("clubAffiliation", value)}>
+                              <SelectTrigger className="mt-1">
+                                <SelectValue placeholder="Select the club you represent..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {clubs.map((club) => (
+                                  <SelectItem key={club} value={club}>{club}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {registerForm.formState.errors.clubAffiliation && (
+                              <p className="text-xs text-red-600 mt-1">{registerForm.formState.errors.clubAffiliation.message}</p>
+                            )}
+                          </div>
+                          <Alert>
+                            <Info className="h-4 w-4" />
+                            <AlertDescription className="text-sm">
+                              Your club must approve your gymnast account before you can compete.
                             </AlertDescription>
                           </Alert>
                         </div>
