@@ -31,15 +31,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if user has permission to approve/update roles
       const currentUser = req.user;
-      if (currentUser.role !== 'admin' && currentUser.role !== 'club') {
-        return res.status(403).json({ message: "Insufficient permissions" });
+      if (currentUser.role !== 'admin') {
+        return res.status(403).json({ message: "Only admins can approve accounts" });
       }
       
-      const user = await storage.updateUserRole(parseInt(id), role, isApproved);
+      // Get the user to update
+      const userToUpdate = await storage.getUser(parseInt(id));
+      if (!userToUpdate) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const user = await storage.updateUserRole(parseInt(id), userToUpdate.role, isApproved);
       res.json(user);
     } catch (error) {
       console.error("Error updating user role:", error);
       res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+
+  // Add gymnast search endpoint for event creation
+  app.get('/api/gymnasts/search', requireAuth, async (req: any, res) => {
+    try {
+      const { firstName, lastName } = req.query;
+      
+      if (!firstName || !lastName) {
+        return res.status(400).json({ message: "First name and last name are required" });
+      }
+
+      // Search for gymnasts matching the name
+      const matchingUsers = await storage.searchGymnastsByName(firstName, lastName);
+      res.json(matchingUsers);
+    } catch (error) {
+      console.error("Error searching gymnasts:", error);
+      res.status(500).json({ message: "Failed to search gymnasts" });
+    }
+  });
+
+  // Add endpoint to add gymnasts to sessions
+  app.post('/api/sessions/:sessionId/gymnasts', requireAuth, async (req: any, res) => {
+    try {
+      const currentUser = req.user;
+      if (currentUser.role !== 'admin' && currentUser.role !== 'club') {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      const { sessionId } = req.params;
+      const { gymnasts } = req.body; // Array of gymnast entries with firstName, lastName, clubName
+
+      const results = [];
+      
+      for (const gymnast of gymnasts) {
+        // Try to find existing gymnast account
+        const matchingUsers = await storage.searchGymnastsByName(gymnast.firstName, gymnast.lastName);
+        
+        if (matchingUsers.length > 0) {
+          // Use existing gymnast account
+          const existingGymnast = matchingUsers[0];
+          await storage.addGymnastToSession(parseInt(sessionId), existingGymnast.id);
+          results.push({
+            ...gymnast,
+            matched: true,
+            gymnastId: existingGymnast.id,
+            username: existingGymnast.username
+          });
+        } else {
+          // Create new gymnast entry for this competition only
+          const newGymnast = await storage.createGymnast({
+            firstName: gymnast.firstName,
+            lastName: gymnast.lastName,
+            clubName: gymnast.clubName,
+            level: gymnast.level || 'Unknown',
+            isApproved: true, // Auto-approve for competition entries
+          });
+          
+          await storage.addGymnastToSession(parseInt(sessionId), newGymnast.id);
+          results.push({
+            ...gymnast,
+            matched: false,
+            gymnastId: newGymnast.id,
+            message: "Created new gymnast entry"
+          });
+        }
+      }
+
+      res.json(results);
+    } catch (error) {
+      console.error("Error adding gymnasts to session:", error);
+      res.status(500).json({ message: "Failed to add gymnasts to session" });
     }
   });
 
@@ -258,6 +336,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating score:", error);
       res.status(500).json({ message: "Failed to update score" });
+    }
+  });
+
+  // Add gymnast stats endpoint
+  app.get('/api/gymnasts/:id/stats', requireAuth, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const currentUser = req.user;
+      
+      // Check if user can access these stats (must be the gymnast themselves or admin)
+      if (currentUser.id !== parseInt(id) && currentUser.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const gymnaststats = await storage.getGymnastStats(parseInt(id));
+      res.json(gymnaststats);
+    } catch (error) {
+      console.error("Error fetching gymnast stats:", error);
+      res.status(500).json({ message: "Failed to fetch gymnast stats" });
     }
   });
 

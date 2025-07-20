@@ -8,6 +8,9 @@ import { AuthProvider } from "@/hooks/use-auth";
 import NotFound from "@/pages/not-found";
 import Auth from "@/pages/auth";
 import Home from "@/pages/home";
+import Admin from "@/pages/admin";
+import CreateEvent from "@/pages/create-event";
+import GymnastStats from "@/pages/gymnast-stats";
 import EventSessions from "@/pages/event-sessions";
 import ScoreEntry from "@/pages/score-entry";
 
@@ -30,6 +33,9 @@ function Router() {
       ) : (
         <>
           <Route path="/" component={Home} />
+          <Route path="/admin" component={Admin} />
+          <Route path="/create-event" component={CreateEvent} />
+          <Route path="/stats" component={GymnastStats} />
           <Route path="/events/:id" component={EventSessions} />
           <Route path="/sessions/:sessionId/score" component={ScoreEntry} />
         </>

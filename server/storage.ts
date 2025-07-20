@@ -54,6 +54,8 @@ export interface IStorage {
   approveGymnast(id: number): Promise<Gymnast>;
   getGymnastsBySession(sessionId: number): Promise<Gymnast[]>;
   addGymnastToSession(sessionId: number, gymnastId: number): Promise<void>;
+  searchGymnastsByName(firstName: string, lastName: string): Promise<User[]>;
+  getGymnastStats(gymnastId: number): Promise<any>;
   
   // Score operations
   getScoresBySession(sessionId: number): Promise<Score[]>;
@@ -244,6 +246,85 @@ export class DatabaseStorage implements IStorage {
 
   async addGymnastToSession(sessionId: number, gymnastId: number): Promise<void> {
     await db.insert(sessionGymnasts).values({ sessionId, gymnastId });
+  }
+
+  async searchGymnastsByName(firstName: string, lastName: string): Promise<User[]> {
+    return await db.select().from(users).where(
+      and(
+        eq(users.firstName, firstName),
+        eq(users.lastName, lastName),
+        eq(users.role, 'gymnast')
+      )
+    );
+  }
+
+  async getGymnastStats(gymnastId: number): Promise<any> {
+    // Get all scores for the gymnast
+    const scoresData = await db
+      .select({
+        id: scores.id,
+        difficulty: scores.difficulty,
+        execution: scores.execution,
+        deductions: scores.deductions,
+        total: scores.total,
+        eventName: events.name,
+        sessionName: eventSessions.name,
+        apparatus: apparatus.name,
+        date: eventSessions.date,
+      })
+      .from(scores)
+      .innerJoin(sessionGymnasts, eq(scores.gymnastId, sessionGymnasts.gymnastId))
+      .innerJoin(eventSessions, eq(sessionGymnasts.sessionId, eventSessions.id))
+      .innerJoin(events, eq(eventSessions.eventId, events.id))
+      .innerJoin(apparatus, eq(scores.apparatusId, apparatus.id))
+      .where(eq(scores.gymnastId, gymnastId))
+      .orderBy(desc(eventSessions.date));
+
+    if (scoresData.length === 0) {
+      return null;
+    }
+
+    // Calculate statistics
+    const totalCompetitions = new Set(scoresData.map(s => s.eventName)).size;
+    const allScores = scoresData.map(s => s.total).filter(s => s > 0);
+    const bestScore = Math.max(...allScores);
+    const averageScore = allScores.reduce((sum, score) => sum + score, 0) / allScores.length;
+
+    // Apparatus statistics
+    const apparatusStats = scoresData.reduce((stats, score) => {
+      if (!stats[score.apparatus]) {
+        stats[score.apparatus] = { scores: [], count: 0 };
+      }
+      if (score.total > 0) {
+        stats[score.apparatus].scores.push(score.total);
+        stats[score.apparatus].count++;
+      }
+      return stats;
+    }, {} as any);
+
+    const formattedApparatusStats = Object.entries(apparatusStats).map(([apparatus, data]: [string, any]) => ({
+      apparatus,
+      count: data.count,
+      average: data.scores.reduce((sum: number, score: number) => sum + score, 0) / data.scores.length,
+      best: Math.max(...data.scores),
+    }));
+
+    // Mock position data (in a real system, this would be calculated from all gymnasts' scores)
+    const recentScores = scoresData.slice(0, 10).map((score, index) => ({
+      ...score,
+      position: Math.floor(Math.random() * 20) + 1, // Mock position
+      totalCompetitors: Math.floor(Math.random() * 30) + 20, // Mock total
+    }));
+
+    return {
+      totalCompetitions,
+      bestScore,
+      averageScore,
+      medalsWon: allScores.filter(s => s >= bestScore * 0.95).length, // Mock medals
+      topThreeFinishes: Math.floor(allScores.length * 0.3), // Mock top 3 finishes
+      recentScores,
+      apparatusStats: formattedApparatusStats,
+    };
   }
 
   // Score operations

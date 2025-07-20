@@ -1,4 +1,4 @@
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,11 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Users, Calendar, MapPin, Clock, List, Search, Download, Eye, Settings } from "lucide-react";
+import { Plus, Users, Calendar, MapPin, Clock, List, Search, Download, Eye, Settings, UserCheck, LogOut, BarChart3 } from "lucide-react";
 import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 interface Event {
   id: number;
@@ -23,8 +23,9 @@ interface Event {
 }
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -45,6 +46,11 @@ export default function Home() {
   });
 
   const canCreateEvents = user?.role === "club" || user?.role === "admin";
+  const isAdmin = user?.role === "admin";
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -98,11 +104,39 @@ export default function Home() {
                   {user?.role}
                 </Badge>
               </div>
+              
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLocation("/admin")}
+                  className="flex items-center gap-2"
+                >
+                  <UserCheck className="w-4 h-4" />
+                  Admin Panel
+                </Button>
+              )}
+              
+              {user?.role === 'gymnast' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLocation("/stats")}
+                  className="flex items-center gap-2"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  My Stats
+                </Button>
+              )}
+              
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => window.location.href = '/api/logout'}
+                onClick={handleLogout}
+                disabled={logoutMutation.isPending}
+                className="flex items-center gap-2"
               >
+                <LogOut className="w-4 h-4" />
                 Sign Out
               </Button>
             </div>
@@ -121,16 +155,13 @@ export default function Home() {
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex space-x-3">
             {canCreateEvents && (
-              <>
-                <Button className="bg-primary hover:bg-blue-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Event
-                </Button>
-                <Button variant="outline">
-                  <Users className="w-4 h-4 mr-2" />
-                  Manage Users
-                </Button>
-              </>
+              <Button 
+                className="bg-primary hover:bg-blue-700"
+                onClick={() => setLocation("/create-event")}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Event
+              </Button>
             )}
           </div>
           
