@@ -1,0 +1,22 @@
+WEBSITE
+
+I want to create a website that displays gymnastics scores at competitions. There is 3 types of user classes - Observer, judges and clubs (+ a website admin login).
+
+Observers cannot enter scores or create competitions, they may only view scores. This is for most users, such as parents of gymnasts.
+Judges can view and enter scores of competitions, but they cannot create competitions or events. For a judge account to be made, they will need to enter the relevant details and it will need to be approved by a website administrator.
+The last level, clubs, will have access to all the admin panel. They can create competitions and events, view scores, but CANNOT edit scores. This means that the only user level that can edit scores is judges and website admin.
+
+Upon landing on the website, the user will be prompted with a login page. They will enter their relevant details, or sign up. The sign up page will allow them to pick from the 3 user classes which account they would like to create. If the user selects observer, prompt them for their first and last name and which club they belong to before creating their account and allowing them access.
+If the user selects either judge or club, you will need to collect more information. Judges will need to input their judge ID, first and last name, and what name they would like to appear as on competition/event pages.
+For clubs, they will need to enter their club name, the nominated account holders first and last name, the clubs location (in Victoria, Australia) and the club username.
+
+Once sign in is complete, the user will land on the events list page. This will list all current events that are ongoing first, and then it will list all the previous events in chronological order of their dates. Users can click on the event, which will have a further break down into "sessions". Sessions are just a sub category of the event, which are also created by the club. 
+
+I would like to add a fourth user class - "Gymnast". The gymnast class is for those who are competing. Gymnast accounts will need first name, last name, and club they represent to register. In order for the gymnast account to be successfully created, the club in which they entered will need to approve the request from the club admin panel. When the user starts typing the club, it will display above the text box with club accounts that already exist, so that the design is user friendly. If the club entered does not exist, please inform the user that this club does not exist or they have not registered an account.
+
+Users will click on the relevant session, which will take them to another category which is named "apparatuses". This will have the following sub categories within:
+"Floor", "Beam", "Bars", "Vault". Upon clicking on an apperatus, it will then list the following gymnasts that are enrolled in the competition and their relevant scores in order of highest to lowest. Those who have not competed (or have received a 0) will be displayed at the bottom.
+
+When a club creates an event or competition, they will need to input a list of all gymnasts that are competing which includes first and last names, as well as which club the gymnast belongs to. When the club is entering the gymnasts names, it should search the gymnast class user database for users who match the description of the first and last name entered. If they exist, this individuals scores and relevant competition information should be tied to said account.
+
+When a gymnast class user logs in, they should have an option to view a "stats" page. The stats page allows them to view their individual history and scores at competitions, as well as graph it against the average score on that apperatus at that competition.
