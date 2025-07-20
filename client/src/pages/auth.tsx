@@ -12,7 +12,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { Info, Medal, LogIn, UserPlus } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -56,6 +62,20 @@ export default function Auth() {
   const [, setLocation] = useLocation();
   const { loginMutation, registerMutation, user, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState("login");
+  const [clubSearchOpen, setClubSearchOpen] = useState(false);
+
+  // Fetch approved clubs for dropdown
+  const { data: clubs = [] } = useQuery({
+    queryKey: ["/api/users/role/club"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/users/role/club");
+      const clubUsers = await response.json();
+      return clubUsers
+        .filter((club: any) => club.isApproved && club.clubName)
+        .map((club: any) => club.clubName);
+    },
+    staleTime: 0,
+  });
 
   // Redirect if already authenticated
   if (isAuthenticated && user) {
@@ -90,6 +110,9 @@ export default function Auth() {
     },
   });
 
+  const watchedRole = registerForm.watch("role");
+  const watchedClubAffiliation = registerForm.watch("clubAffiliation");
+
   const onLogin = (data: z.infer<typeof loginSchema>) => {
     loginMutation.mutate(data, {
       onSuccess: () => setLocation("/")
@@ -102,16 +125,6 @@ export default function Auth() {
       onSuccess: () => setLocation("/")
     });
   };
-
-  const watchedRole = registerForm.watch("role");
-
-  const clubs = [
-    "Melbourne Gymnastics Club",
-    "Victorian Elite Gymnastics", 
-    "Springboard Gymnastics",
-    "Phoenix Gymnastics Academy",
-    "Olympic Dreams Gymnastics",
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
@@ -356,16 +369,45 @@ export default function Auth() {
                         <div className="space-y-3">
                           <div>
                             <Label htmlFor="clubAffiliation">Club Affiliation *</Label>
-                            <Select onValueChange={(value) => registerForm.setValue("clubAffiliation", value)}>
-                              <SelectTrigger className="mt-1">
-                                <SelectValue placeholder="Select the club you represent..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {clubs.map((club) => (
-                                  <SelectItem key={club} value={club}>{club}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <Popover open={clubSearchOpen} onOpenChange={setClubSearchOpen}>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  aria-expanded={clubSearchOpen}
+                                  className="w-full justify-between mt-1"
+                                >
+                                  {watchedClubAffiliation || "Select the club you represent..."}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-full p-0">
+                                <Command>
+                                  <CommandInput placeholder="Search clubs..." />
+                                  <CommandEmpty>No clubs found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {clubs.map((club) => (
+                                      <CommandItem
+                                        key={club}
+                                        value={club}
+                                        onSelect={(currentValue) => {
+                                          registerForm.setValue("clubAffiliation", currentValue === watchedClubAffiliation ? "" : currentValue);
+                                          setClubSearchOpen(false);
+                                        }}
+                                      >
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            watchedClubAffiliation === club ? "opacity-100" : "opacity-0"
+                                          )}
+                                        />
+                                        {club}
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
                             {registerForm.formState.errors.clubAffiliation && (
                               <p className="text-xs text-red-600 mt-1">{registerForm.formState.errors.clubAffiliation.message}</p>
                             )}

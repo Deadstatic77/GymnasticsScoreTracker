@@ -287,7 +287,7 @@ export default function ScoreEntry() {
                         <div className="text-right">
                           {score ? (
                             <>
-                              <div className="text-lg font-bold text-secondary">{parseFloat(score.finalScore).toFixed(1)}</div>
+                              <div className="text-lg font-bold text-secondary">{(score.finalScore || 0).toFixed(1)}</div>
                               <div className="text-xs text-gray-500">Scored</div>
                             </>
                           ) : selectedGymnast?.id === gymnast.id ? (

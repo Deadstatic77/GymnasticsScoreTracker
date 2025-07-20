@@ -38,6 +38,7 @@ function Router() {
           <Route path="/stats" component={GymnastStats} />
           <Route path="/events/:id" component={EventSessions} />
           <Route path="/sessions/:sessionId/score" component={ScoreEntry} />
+          <Route path="/auth" component={Auth} />
         </>
       )}
       <Route component={NotFound} />

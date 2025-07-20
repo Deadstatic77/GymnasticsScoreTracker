@@ -10,13 +10,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Latest Enhancements** (2025-01-20): Implemented all requested additional features and fixes
+- **Admin Panel Enhancement**: Added approved users section with ability to revoke user approvals and manage existing accounts
+- **Searchable Club Dropdown**: Updated gymnast registration with searchable club selection that includes all approved clubs
+- **Session Date Display**: Added calendar dates and proper status-based functionality to session listings
+- **Score Display Standardization**: All scores consistently show in "X.X" format across all pages
+- **Navigation Fixes**: Resolved logout 404 issue by adding proper auth route handling
+- **Status-Based Access**: Sessions now properly determine status from dates and allow appropriate access
 - **Critical Bug Fixes Implemented** (2025-01-20): Fixed 10 major issues including approval workflows, apparatus corrections, and score formatting
 - **Apparatus Corrected**: Limited to only 4 women's gymnastics events: Floor, Vault, Bars, and Beam
 - **Enhanced Registration Validation**: Added required field validation for gymnast club affiliation and role-specific fields
 - **Improved Approval Workflows**: Gymnast accounts now properly route to clubs for approval, admin accounts handle judges/clubs
 - **Account Rejection System**: Added ability to reject and remove pending accounts with proper feedback
 - **Enhanced Admin Panel**: Added search functionality to find users by name, username, or email
-- **Score Display Standardized**: All scores now display in "X.X" format throughout the application
 - **Date Logic Fixed**: Events automatically update status based on start/end dates (upcoming, live, completed)
 - **Independent Authentication**: Traditional username/password system with admin account (username: "admin", password: "admin123")
 

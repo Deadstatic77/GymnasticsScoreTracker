@@ -98,6 +98,35 @@ export default function Admin() {
     approveUserMutation.mutate({ userId, approved: false });
   };
 
+  const revokeApprovalMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const response = await apiRequest("PATCH", `/api/users/${userId}/role`, {
+        isApproved: false,
+      });
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Approval Revoked",
+        description: "User approval has been revoked successfully.",
+      });
+      refetchJudges();
+      refetchClubs();
+      refetchGymnasts();
+    },
+    onError: (error) => {
+      toast({
+        title: "Action Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleRevokeApproval = (userId: number) => {
+    revokeApprovalMutation.mutate(userId);
+  };
+
   // Filter function for search
   const filterUsers = (users: User[]) => {
     if (!searchTerm.trim()) return users;
@@ -196,6 +225,89 @@ export default function Admin() {
                       </div>
                     </TableCell>
                   )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const ApprovedUsersTable = ({ users, title, type }: { users: User[]; title: string; type: string }) => {
+    const filteredUsers = filterUsers(users);
+    const approvedUsers = filteredUsers.filter(u => u.isApproved);
+
+    if (approvedUsers.length === 0) {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              {title} Approved ({approvedUsers.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-500 text-center py-8">No approved users</p>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            {title} Approved ({approvedUsers.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Username</TableHead>
+                <TableHead>Email</TableHead>
+                {type === "judge" && <TableHead>Judge ID</TableHead>}
+                {type === "club" && <TableHead>Club Name</TableHead>}
+                {type === "gymnast" && <TableHead>Club Affiliation</TableHead>}
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {approvedUsers.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">
+                    {user.firstName} {user.lastName}
+                  </TableCell>
+                  <TableCell>{user.username}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  {type === "judge" && <TableCell>{user.judgeId || "N/A"}</TableCell>}
+                  {type === "club" && <TableCell>{user.clubName || "N/A"}</TableCell>}
+                  {type === "gymnast" && <TableCell>{user.clubAffiliation || "N/A"}</TableCell>}
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleRevokeApproval(user.id)}
+                        disabled={revokeApprovalMutation.isPending}
+                        className="border-red-600 text-red-600 hover:bg-red-50"
+                      >
+                        <UserX className="h-4 w-4 mr-1" />
+                        Revoke
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {/* TODO: Implement profile view */}}
+                        className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                      >
+                        View Profile
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -309,9 +421,9 @@ export default function Admin() {
           </TabsContent>
 
           <TabsContent value="approved" className="space-y-6">
-            <UserApprovalTable users={pendingJudges} title="Judges" type="judge" />
-            <UserApprovalTable users={pendingClubs} title="Clubs" type="club" />
-            <UserApprovalTable users={pendingGymnasts} title="Gymnasts" type="gymnast" />
+            <ApprovedUsersTable users={pendingJudges} title="Judges" type="judge" />
+            <ApprovedUsersTable users={pendingClubs} title="Clubs" type="club" />
+            <ApprovedUsersTable users={pendingGymnasts} title="Gymnasts" type="gymnast" />
           </TabsContent>
         </Tabs>
       </div>

@@ -372,6 +372,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user role/approval (for revoking approval)
+  app.patch("/api/users/:userId/role", async (req, res) => {
+    if (!req.isAuthenticated() || req.user?.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    const { userId } = req.params;
+    const { isApproved } = req.body;
+
+    try {
+      const user = await storage.updateUser(parseInt(userId), { isApproved });
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

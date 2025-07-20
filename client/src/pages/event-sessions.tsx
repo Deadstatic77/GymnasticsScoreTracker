@@ -1,5 +1,5 @@
 import { useParams, useLocation, Link } from "wouter";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,6 +39,19 @@ export default function EventSessions() {
   });
 
   const canManage = user?.role === "club" || user?.role === "admin";
+
+  const getSessionStatus = (session: Session) => {
+    const today = new Date().toISOString().split('T')[0];
+    const sessionDate = session.date;
+    
+    if (sessionDate < today) {
+      return "completed";
+    } else if (sessionDate === today) {
+      return "in_progress";
+    } else {
+      return "upcoming";
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -170,13 +183,22 @@ export default function EventSessions() {
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">{session.name}</h3>
-                      <p className="text-sm text-gray-600">{session.startTime} - {session.endTime}</p>
-                      <p className="text-sm text-gray-600">{session.level}</p>
+                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4" />
+                          {new Date(session.date).toLocaleDateString()}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {session.startTime} - {session.endTime}
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600">Level: {session.level}</p>
                     </div>
-                    <Badge className={getStatusColor(session.status)}>
-                      {getStatusIcon(session.status)}
-                      {session.status === "in_progress" ? "In Progress" :
-                       session.status === "upcoming" ? "Upcoming" : "Completed"}
+                    <Badge className={getStatusColor(getSessionStatus(session))}>
+                      {getStatusIcon(getSessionStatus(session))}
+                      {getSessionStatus(session) === "in_progress" ? "In Progress" :
+                       getSessionStatus(session) === "upcoming" ? "Upcoming" : "Completed"}
                     </Badge>
                   </div>
                   
@@ -195,13 +217,13 @@ export default function EventSessions() {
                   </div>
                   
                   <div className="mt-6 flex space-x-2">
-                    {session.status === "in_progress" && user?.role === "judge" && user?.isApproved ? (
+                    {(getSessionStatus(session) === "in_progress" || getSessionStatus(session) === "completed") && user?.role === "judge" && user?.isApproved ? (
                       <Link href={`/sessions/${session.id}/score`} className="flex-1">
                         <Button className="w-full bg-primary hover:bg-blue-700">
-                          Enter Scores
+                          {getSessionStatus(session) === "completed" ? "Edit Scores" : "Enter Scores"}
                         </Button>
                       </Link>
-                    ) : session.status === "completed" ? (
+                    ) : getSessionStatus(session) === "completed" ? (
                       <Link href={`/sessions/${session.id}/results`} className="flex-1">
                         <Button className="w-full bg-secondary hover:bg-green-600">
                           View Results
@@ -209,7 +231,7 @@ export default function EventSessions() {
                       </Link>
                     ) : (
                       <Button className="flex-1 bg-gray-100 text-gray-500 cursor-not-allowed" disabled>
-                        {session.status === "upcoming" ? "Not Started" : "Enter Session"}
+                        {getSessionStatus(session) === "upcoming" ? "Not Started" : "Enter Session"}
                       </Button>
                     )}
                     
