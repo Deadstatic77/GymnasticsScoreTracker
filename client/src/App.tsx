@@ -3,11 +3,11 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
+import { AuthProvider } from "@/hooks/use-auth";
 import NotFound from "@/pages/not-found";
-import Landing from "@/pages/landing";
+import Auth from "@/pages/auth";
 import Home from "@/pages/home";
-import Registration from "@/pages/registration";
 import EventSessions from "@/pages/event-sessions";
 import ScoreEntry from "@/pages/score-entry";
 
@@ -26,13 +26,7 @@ function Router() {
           </div>
         )} />
       ) : !isAuthenticated ? (
-        <>
-          <Route path="/" component={Landing} />
-          <Route path="/register" component={Registration} />
-        </>
-      ) : !user ? (
-        // User is authenticated but profile is incomplete
-        <Route path="/" component={Registration} />
+        <Route path="/" component={Auth} />
       ) : (
         <>
           <Route path="/" component={Home} />
@@ -48,10 +42,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

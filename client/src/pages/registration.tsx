@@ -10,16 +10,17 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { Info, Medal, ArrowLeft } from "lucide-react";
 
 const registrationSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string(),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Valid email is required"),
-  role: z.enum(["observer", "judge", "club"]),
+  role: z.enum(["observer", "judge", "club", "gymnast"]),
   // Observer fields
   clubAffiliation: z.string().optional(),
   // Judge fields
@@ -29,6 +30,9 @@ const registrationSchema = z.object({
   clubName: z.string().optional(),
   clubUsername: z.string().optional(),
   location: z.string().optional(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords must match",
+  path: ["confirmPassword"],
 }).refine((data) => {
   if (data.role === "observer" && !data.clubAffiliation) {
     return false;
@@ -44,12 +48,15 @@ const registrationSchema = z.object({
 
 export default function Registration() {
   const [, setLocation] = useLocation();
-  const { toast } = useToast();
   const [selectedRole, setSelectedRole] = useState<string>("");
+  const { registerMutation } = useAuth();
 
   const form = useForm({
     resolver: zodResolver(registrationSchema),
     defaultValues: {
+      username: "",
+      password: "",
+      confirmPassword: "",
       firstName: "",
       lastName: "",
       email: "",
@@ -63,30 +70,13 @@ export default function Registration() {
     },
   });
 
-  const registrationMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof registrationSchema>) => {
-      return await apiRequest("POST", "/api/users/register", data);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Registration Successful",
-        description: selectedRole === "observer" 
-          ? "Your account has been created. You can now sign in."
-          : "Your account has been created and is pending approval.",
-      });
-      setLocation("/");
-    },
-    onError: (error) => {
-      toast({
-        title: "Registration Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
   const onSubmit = (data: z.infer<typeof registrationSchema>) => {
-    registrationMutation.mutate(data);
+    const { confirmPassword, ...registerData } = data;
+    registerMutation.mutate(registerData, {
+      onSuccess: () => {
+        setLocation("/");
+      }
+    });
   };
 
   const watchedRole = form.watch("role");
@@ -166,6 +156,49 @@ export default function Registration() {
                     </div>
                   </Card>
                 </RadioGroup>
+              </div>
+
+              {/* Account Information */}
+              <div>
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  {...form.register("username")}
+                  className="mt-1"
+                  placeholder="Choose a unique username"
+                />
+                {form.formState.errors.username && (
+                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.username.message}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    {...form.register("password")}
+                    className="mt-1"
+                    placeholder="At least 6 characters"
+                  />
+                  {form.formState.errors.password && (
+                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.password.message}</p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    {...form.register("confirmPassword")}
+                    className="mt-1"
+                    placeholder="Confirm your password"
+                  />
+                  {form.formState.errors.confirmPassword && (
+                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.confirmPassword.message}</p>
+                  )}
+                </div>
               </div>
 
               {/* Basic Information */}
@@ -308,9 +341,9 @@ export default function Registration() {
                 <Button
                   type="submit"
                   className="flex-1 bg-primary hover:bg-blue-700"
-                  disabled={registrationMutation.isPending}
+                  disabled={registerMutation.isPending}
                 >
-                  {registrationMutation.isPending ? "Creating..." : "Create Account"}
+                  {registerMutation.isPending ? "Creating..." : "Create Account"}
                 </Button>
                 <Button
                   type="button"

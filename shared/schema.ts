@@ -27,14 +27,16 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table (mandatory for Replit Auth)
+// User storage table
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().notNull(),
-  email: varchar("email").unique(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
+  id: serial("id").primaryKey(),
+  username: varchar("username").unique().notNull(),
+  email: varchar("email").unique().notNull(),
+  password: varchar("password").notNull(),
+  firstName: varchar("first_name").notNull(),
+  lastName: varchar("last_name").notNull(),
   profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role", { enum: ["observer", "judge", "club", "admin"] }).notNull().default("observer"),
+  role: varchar("role", { enum: ["observer", "judge", "club", "admin", "gymnast"] }).notNull().default("observer"),
   isApproved: boolean("is_approved").notNull().default(false),
   judgeId: varchar("judge_id"),
   displayName: varchar("display_name"),
@@ -54,7 +56,7 @@ export const events = pgTable("events", {
   endDate: date("end_date").notNull(),
   description: text("description"),
   status: varchar("status", { enum: ["upcoming", "live", "completed"] }).notNull().default("upcoming"),
-  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdBy: integer("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -81,7 +83,7 @@ export const apparatus = pgTable("apparatus", {
 
 export const gymnasts = pgTable("gymnasts", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").references(() => users.id),
+  userId: integer("user_id").references(() => users.id),
   firstName: varchar("first_name").notNull(),
   lastName: varchar("last_name").notNull(),
   clubName: varchar("club_name").notNull(),
@@ -104,7 +106,7 @@ export const scores = pgTable("scores", {
   sessionId: integer("session_id").notNull().references(() => eventSessions.id, { onDelete: "cascade" }),
   gymnastId: integer("gymnast_id").notNull().references(() => gymnasts.id, { onDelete: "cascade" }),
   apparatusId: integer("apparatus_id").notNull().references(() => apparatus.id),
-  judgeId: varchar("judge_id").notNull().references(() => users.id),
+  judgeId: integer("judge_id").notNull().references(() => users.id),
   difficultyScore: decimal("difficulty_score", { precision: 4, scale: 3 }),
   executionScore: decimal("execution_score", { precision: 4, scale: 3 }),
   finalScore: decimal("final_score", { precision: 4, scale: 3 }).notNull(),
@@ -215,6 +217,7 @@ export const insertScoreSchema = createInsertSchema(scores).omit({
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+export type InsertUser = Omit<typeof users.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>;
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type Event = typeof events.$inferSelect;
 export type InsertEventSession = z.infer<typeof insertEventSessionSchema>;
