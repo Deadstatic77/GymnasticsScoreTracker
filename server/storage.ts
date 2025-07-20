@@ -74,7 +74,18 @@ export class DatabaseStorage implements IStorage {
       .onConflictDoUpdate({
         target: users.id,
         set: {
-          ...userData,
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profileImageUrl: userData.profileImageUrl,
+          role: userData.role,
+          isApproved: userData.isApproved,
+          judgeId: userData.judgeId,
+          displayName: userData.displayName,
+          clubName: userData.clubName,
+          clubUsername: userData.clubUsername,
+          location: userData.location,
+          clubAffiliation: userData.clubAffiliation,
           updatedAt: new Date(),
         },
       })

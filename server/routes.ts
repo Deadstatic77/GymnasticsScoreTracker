@@ -25,9 +25,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User registration and management
-  app.post('/api/users/register', async (req, res) => {
+  app.post('/api/users/register', isAuthenticated, async (req: any, res) => {
     try {
       const userData = req.body;
+      
+      // Get user ID from authenticated session
+      userData.id = req.user.claims.sub;
+      userData.email = req.user.claims.email;
+      userData.firstName = req.user.claims.first_name;
+      userData.lastName = req.user.claims.last_name;
+      userData.profileImageUrl = req.user.claims.profile_image_url;
       
       // Set approval status based on role
       userData.isApproved = userData.role === 'observer';
