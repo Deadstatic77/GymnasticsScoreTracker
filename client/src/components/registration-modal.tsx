@@ -1,18 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
 import { Info } from "lucide-react";
 
 interface RegistrationModalProps {
@@ -20,294 +9,80 @@ interface RegistrationModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const registrationSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Valid email is required"),
-  role: z.enum(["observer", "judge", "club"]),
-  // Observer fields
-  clubAffiliation: z.string().optional(),
-  // Judge fields
-  judgeId: z.string().optional(),
-  displayName: z.string().optional(),
-  // Club fields
-  clubName: z.string().optional(),
-  clubUsername: z.string().optional(),
-  location: z.string().optional(),
-}).refine((data) => {
-  if (data.role === "observer" && !data.clubAffiliation) {
-    return false;
-  }
-  if (data.role === "judge" && (!data.judgeId || !data.displayName)) {
-    return false;
-  }
-  if (data.role === "club" && (!data.clubName || !data.clubUsername || !data.location)) {
-    return false;
-  }
-  return true;
-}, "Please fill in all required fields for your account type");
-
 export function RegistrationModal({ open, onOpenChange }: RegistrationModalProps) {
-  const { toast } = useToast();
-  const [selectedRole, setSelectedRole] = useState<string>("");
-
-  const form = useForm({
-    resolver: zodResolver(registrationSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      role: "observer" as const,
-      clubAffiliation: "",
-      judgeId: "",
-      displayName: "",
-      clubName: "",
-      clubUsername: "",
-      location: "",
-    },
-  });
-
-  const registrationMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof registrationSchema>) => {
-      return await apiRequest("POST", "/api/users/register", data);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Registration Successful",
-        description: selectedRole === "observer" 
-          ? "Your account has been created and you can now sign in."
-          : "Your account has been created and is pending approval.",
-      });
-      onOpenChange(false);
-      form.reset();
-      setSelectedRole("");
-    },
-    onError: (error) => {
-      toast({
-        title: "Registration Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const onSubmit = (data: z.infer<typeof registrationSchema>) => {
-    registrationMutation.mutate(data);
+  // Instead of trying to register directly, redirect to Replit auth first
+  const handleRegistration = (role: string) => {
+    // Store the selected role in localStorage so we can use it after auth
+    localStorage.setItem('pendingRegistrationRole', role);
+    // Redirect to Replit auth
+    window.location.href = '/api/login';
   };
-
-  const watchedRole = form.watch("role");
-
-  const handleRoleChange = (value: string) => {
-    setSelectedRole(value);
-    form.setValue("role", value as any);
-  };
-
-  const clubs = [
-    "Melbourne Gymnastics Club",
-    "Victorian Elite Gymnastics",
-    "Springboard Gymnastics",
-    "Phoenix Gymnastics Academy",
-    "Olympic Dreams Gymnastics",
-  ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Create Account</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* User Type Selection */}
+        <div className="space-y-4">
+          <p className="text-gray-600">
+            To create an account, you'll need to sign in with Replit first, then complete your profile setup.
+          </p>
+
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Choose your account type, then you'll be redirected to sign in with Replit.
+            </AlertDescription>
+          </Alert>
+
           <div className="space-y-3">
-            <Label className="text-base font-medium">Account Type</Label>
-            <RadioGroup value={watchedRole} onValueChange={handleRoleChange}>
-              <Card className="p-4 cursor-pointer hover:bg-gray-50 transition-colors">
-                <div className="flex items-center space-x-3">
-                  <RadioGroupItem value="observer" id="observer" />
-                  <div className="flex-1">
-                    <Label htmlFor="observer" className="font-medium cursor-pointer">Observer</Label>
-                    <p className="text-sm text-gray-600">View scores only (Parents, spectators)</p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-4 cursor-pointer hover:bg-gray-50 transition-colors">
-                <div className="flex items-center space-x-3">
-                  <RadioGroupItem value="judge" id="judge" />
-                  <div className="flex-1">
-                    <Label htmlFor="judge" className="font-medium cursor-pointer">Judge</Label>
-                    <p className="text-sm text-gray-600">View and enter scores (Requires approval)</p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-4 cursor-pointer hover:bg-gray-50 transition-colors">
-                <div className="flex items-center space-x-3">
-                  <RadioGroupItem value="club" id="club" />
-                  <div className="flex-1">
-                    <Label htmlFor="club" className="font-medium cursor-pointer">Club Administrator</Label>
-                    <p className="text-sm text-gray-600">Manage competitions and events</p>
-                  </div>
-                </div>
-              </Card>
-            </RadioGroup>
-          </div>
-
-          {/* Basic Information */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="firstName">First Name</Label>
-              <Input
-                id="firstName"
-                {...form.register("firstName")}
-                className="mt-1"
-              />
-              {form.formState.errors.firstName && (
-                <p className="text-sm text-red-600 mt-1">{form.formState.errors.firstName.message}</p>
-              )}
-            </div>
-            <div>
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input
-                id="lastName"
-                {...form.register("lastName")}
-                className="mt-1"
-              />
-              {form.formState.errors.lastName && (
-                <p className="text-sm text-red-600 mt-1">{form.formState.errors.lastName.message}</p>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              {...form.register("email")}
-              className="mt-1"
-            />
-            {form.formState.errors.email && (
-              <p className="text-sm text-red-600 mt-1">{form.formState.errors.email.message}</p>
-            )}
-          </div>
-
-          {/* Observer Fields */}
-          {watchedRole === "observer" && (
-            <div>
-              <Label htmlFor="clubAffiliation">Club Affiliation</Label>
-              <Select onValueChange={(value) => form.setValue("clubAffiliation", value)}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select your club..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {clubs.map((club) => (
-                    <SelectItem key={club} value={club}>{club}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {form.formState.errors.clubAffiliation && (
-                <p className="text-sm text-red-600 mt-1">{form.formState.errors.clubAffiliation.message}</p>
-              )}
-            </div>
-          )}
-
-          {/* Judge Fields */}
-          {watchedRole === "judge" && (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="judgeId">Judge ID</Label>
-                <Input
-                  id="judgeId"
-                  {...form.register("judgeId")}
-                  placeholder="Your official judge ID"
-                  className="mt-1"
-                />
-                {form.formState.errors.judgeId && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.judgeId.message}</p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="displayName">Display Name</Label>
-                <Input
-                  id="displayName"
-                  {...form.register("displayName")}
-                  placeholder="How you want to appear on scoresheets"
-                  className="mt-1"
-                />
-                {form.formState.errors.displayName && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.displayName.message}</p>
-                )}
-              </div>
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Judge accounts require administrator approval before activation.
-                </AlertDescription>
-              </Alert>
-            </div>
-          )}
-
-          {/* Club Fields */}
-          {watchedRole === "club" && (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="clubName">Club Name</Label>
-                <Input
-                  id="clubName"
-                  {...form.register("clubName")}
-                  className="mt-1"
-                />
-                {form.formState.errors.clubName && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.clubName.message}</p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="clubUsername">Club Username</Label>
-                <Input
-                  id="clubUsername"
-                  {...form.register("clubUsername")}
-                  placeholder="Unique club identifier"
-                  className="mt-1"
-                />
-                {form.formState.errors.clubUsername && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.clubUsername.message}</p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="location">Location (Victoria, Australia)</Label>
-                <Input
-                  id="location"
-                  {...form.register("location")}
-                  placeholder="City/Suburb"
-                  className="mt-1"
-                />
-                {form.formState.errors.location && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.location.message}</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div className="flex space-x-3 pt-4">
-            <Button
-              type="submit"
-              className="flex-1 bg-primary hover:bg-blue-700"
-              disabled={registrationMutation.isPending}
+            <Button 
+              onClick={() => handleRegistration('observer')} 
+              variant="outline" 
+              className="w-full text-left h-auto p-4"
             >
-              {registrationMutation.isPending ? "Creating..." : "Create Account"}
+              <div className="text-left">
+                <div className="font-medium">Observer</div>
+                <div className="text-sm text-gray-600">View scores only (Parents, spectators)</div>
+              </div>
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="px-6"
+
+            <Button 
+              onClick={() => handleRegistration('judge')} 
+              variant="outline" 
+              className="w-full text-left h-auto p-4"
             >
-              Cancel
+              <div className="text-left">
+                <div className="font-medium">Judge</div>
+                <div className="text-sm text-gray-600">Enter scores (Requires approval)</div>
+              </div>
+            </Button>
+
+            <Button 
+              onClick={() => handleRegistration('club')} 
+              variant="outline" 
+              className="w-full text-left h-auto p-4"
+            >
+              <div className="text-left">
+                <div className="font-medium">Club Administrator</div>
+                <div className="text-sm text-gray-600">Manage competitions and events</div>
+              </div>
+            </Button>
+
+            <Button 
+              onClick={() => handleRegistration('gymnast')} 
+              variant="outline" 
+              className="w-full text-left h-auto p-4"
+            >
+              <div className="text-left">
+                <div className="font-medium">Gymnast</div>
+                <div className="text-sm text-gray-600">Competing gymnasts (Requires club approval)</div>
+              </div>
             </Button>
           </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

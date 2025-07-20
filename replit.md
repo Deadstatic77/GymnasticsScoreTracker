@@ -8,6 +8,14 @@ This is a full-stack web application for managing gymnastics competitions, built
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+- **Migration Completed** (2025-01-20): Successfully migrated project from Replit Agent to Replit environment
+- **Database Setup**: PostgreSQL database provisioned and connected with all schema tables
+- **Authentication Fixed**: Resolved session secret issues and Replit Auth integration
+- **Registration Flow**: Updated authentication flow to handle new user registration properly
+- **Application Status**: Server running successfully on port 5000 with all core features operational
+
 ## System Architecture
 
 ### Frontend Architecture
